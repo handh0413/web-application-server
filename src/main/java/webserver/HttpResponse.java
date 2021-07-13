@@ -28,11 +28,16 @@ public class HttpResponse {
 	public void forward(String url) throws IOException {
         byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
         if (url.endsWith(".css")) {
-        	response200CssHeader(dos, body.length);
+        	response200CssHeader(body.length);
         } else {
-        	response200Header(dos, body.length);
+        	response200Header(body.length);
         }
-        responseBody(dos, body);
+        responseBody(body);
+	}
+	
+	public void forwardBody(byte[] body) throws IOException {
+		response200Header(body.length);
+		responseBody(body);
 	}
 	
 	public void sendRedirect(String url) throws IOException {
@@ -44,7 +49,7 @@ public class HttpResponse {
         dos.writeBytes("\r\n");
 	}
 	
-	private void response200Header(DataOutputStream dos, int lengthOfBodyContent) throws IOException {
+	private void response200Header(int lengthOfBodyContent) throws IOException {
         dos.writeBytes("HTTP/1.1 200 OK \r\n");
         for (String key : headers.keySet()) {
         	dos.writeBytes(key + ": " + headers.get(key) + "\r\n");
@@ -54,7 +59,7 @@ public class HttpResponse {
         dos.writeBytes("\r\n");
     }
 
-    private void response200CssHeader(DataOutputStream dos, int lengthOfBodyContent) throws IOException {
+    private void response200CssHeader(int lengthOfBodyContent) throws IOException {
         dos.writeBytes("HTTP/1.1 200 OK \r\n");
         for (String key : headers.keySet()) {
         	dos.writeBytes(key + ": " + headers.get(key));
@@ -64,7 +69,7 @@ public class HttpResponse {
         dos.writeBytes("\r\n");
     }
     
-    private void responseBody(DataOutputStream dos, byte[] body) throws IOException {
+    private void responseBody(byte[] body) throws IOException {
         dos.write(body, 0, body.length);
         dos.writeBytes("\r\n");
         dos.flush();

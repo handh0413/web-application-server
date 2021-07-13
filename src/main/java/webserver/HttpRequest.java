@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,7 +23,7 @@ public class HttpRequest {
 	private Map<String, String> params = new HashMap<>();
 	
 	public HttpRequest(InputStream in) throws IOException {
-		BufferedReader br = new BufferedReader(new InputStreamReader(in));
+		BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
 		String requestLine = br.readLine();
 		String[] tokens = requestLine.split(" ");
 		this.method = tokens[0];
@@ -43,12 +44,16 @@ public class HttpRequest {
 			if (index > -1) {
 				this.path = uri.substring(0, index);
 				String queryString = uri.substring(index + 1);
-				params = HttpRequestUtils.parseQueryString(queryString);
+				String decodedQueryString = URLDecoder.decode(queryString, "UTF-8");
+				params = HttpRequestUtils.parseQueryString(decodedQueryString);
+			} else {
+				this.path = uri;
 			}
 		} else if ("POST".equals(method)) {
 			this.path = uri;
 			String queryString = IOUtils.readData(br, Integer.parseInt(headers.get("Content-Length")));
-			params = HttpRequestUtils.parseQueryString(queryString);
+			String decodedQueryString = URLDecoder.decode(queryString, "UTF-8");
+			params = HttpRequestUtils.parseQueryString(decodedQueryString);
 		}
 	}
 

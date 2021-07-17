@@ -1,5 +1,7 @@
 package http;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,19 +13,19 @@ import util.HttpRequestUtils;
 public class RequestLine {
 	private static final Logger log = LoggerFactory.getLogger(RequestLine.class);
 	
-	private String method;
+	private HttpMethod method;
 	private String path;
 	private Map<String, String> params = new HashMap<>();
 	
-	public RequestLine(String requestLine) {
-		log.debug("request line : {}", requestLine);
+	public RequestLine(String requestLine) throws UnsupportedEncodingException {
+		// log.debug("request line : {}", requestLine);
 		String[] tokens = requestLine.split(" ");
 		if (tokens.length != 3) {
 			throw new IllegalArgumentException(requestLine + "이 형식에 맞지 않습니다");
 		}
 		
-		method = tokens[0];
-		if ("POST".equals(method)) {
+		method = HttpMethod.valueOf(tokens[0]);
+		if (method.isPost()) {
 			path = tokens[1];
 			return;
 		}
@@ -33,11 +35,12 @@ public class RequestLine {
 			path = tokens[1];
 		} else {
 			path = tokens[1].substring(0, index);
-			params = HttpRequestUtils.parseCookies(tokens[1].substring(index + 1));
+			String decodedQueryString = URLDecoder.decode(tokens[1].substring(index + 1), "UTF-8");
+			params = HttpRequestUtils.parseCookies(decodedQueryString);
 		}
 	}
 
-	public String getMethod() {
+	public HttpMethod getMethod() {
 		return method;
 	}
 

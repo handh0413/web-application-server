@@ -4,13 +4,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sun.nio.ch.IOUtil;
 import util.HttpRequestUtils;
 import util.IOUtils;
 
@@ -33,16 +33,17 @@ public class HttpRequest {
 			
 			line = br.readLine();
 			while (!line.equals("")) {
-				log.debug("header : {}", line);
+				// log.debug("header : {}", line);
 				String[] tokens = line.split(":");
 				headers.put(tokens[0].trim(), tokens[1].trim());
 				line = br.readLine();
 			}
 			
-			if ("POST".equals(getMethod())) {
+			if (this.getMethod().isPost()) {
 				String body = IOUtils.readData(br, 
 						Integer.parseInt(headers.get("Content-Length")));
-				params = HttpRequestUtils.parseCookies(body);
+				String decodedQueryString = URLDecoder.decode(body, "UTF-8");
+				params = HttpRequestUtils.parseQueryString(decodedQueryString);
 			} else {
 				params = requestLine.getParams();
 			}
@@ -51,7 +52,7 @@ public class HttpRequest {
 		}
 	}
 	
-	public String getMethod() {
+	public HttpMethod getMethod() {
 		return requestLine.getMethod();
 	}
 	

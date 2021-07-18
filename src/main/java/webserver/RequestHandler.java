@@ -4,17 +4,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.Collection;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import db.DataBase;
+import http.Controller;
 import http.HttpRequest;
 import http.HttpResponse;
-import model.User;
-import util.HttpRequestUtils;
+import http.RequestMapping;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -32,66 +29,16 @@ public class RequestHandler extends Thread {
         	HttpRequest request = new HttpRequest(in);
         	HttpResponse response = new HttpResponse(out);
         	
-            boolean logined = false;
-            if (request.getHeader("Cookie") != null) {
-                logined = isLogin(request.getHeader("Cookie"));
-            }
-
-            String url = getDefaultUrl(request.getPath());
-            if ("/user/create".equals(url)) {
-                User user = new User(request.getParameter("userId"), 
-                		request.getParameter("password"), 
-                		request.getParameter("name"),
-                        request.getParameter("email"));
-                DataBase.addUser(user);
-                response.sendRedirect("/index.html");
-            } else if ("/user/login".equals(url)) {
-                User user = DataBase.findUserById(request.getParameter("userId"));
-                if (user != null) {
-                    if (user.login(request.getParameter("password"))) {
-                        response.addHeader("Cookie", "logined=true");
-                        response.sendRedirect("/index.html");
-                    } else {
-                        response.forward("/user/login_failed.html");
-                    }
-                } else {
-                	response.forward("/user/login_failed.html");
-                }
-            } else if ("/user/list".equals(url)) {
-                if (!logined) {
-                    response.forward("/user/login.html");
-                    return;
-                }
-
-                Collection<User> users = DataBase.findAll();
-                StringBuilder sb = new StringBuilder();
-                sb.append("<table border='1'>");
-                for (User user : users) {
-                    sb.append("<tr>");
-                    sb.append("<td>" + user.getUserId() + "</td>");
-                    sb.append("<td>" + user.getName() + "</td>");
-                    sb.append("<td>" + user.getEmail() + "</td>");
-                    sb.append("</tr>");
-                }
-                sb.append("</table>");
-                response.forwardBody(sb.toString());
-            } else if (url.endsWith(".css")) {
-                response.forward(url);
+            Controller controller = RequestMapping.getController(request.getPath());
+            if (controller == null) {
+            	String path = getDefaultUrl(request.getPath());
+            	response.forward(path);
             } else {
-            	response.forward(url);
+            	controller.service(request, response);
             }
         } catch (IOException e) {
             log.error(e.getMessage());
         }
-    }
-
-    private boolean isLogin(String value) {
-        Map<String, String> cookies = HttpRequestUtils.parseCookies(value);
-        String logined = cookies.get("logined");
-        if (logined == null) {
-            return false;
-        }
-        return Boolean.parseBoolean(logined);
     }
 
     private String getDefaultUrl(String url) {
